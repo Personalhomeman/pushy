@@ -92,18 +92,18 @@ final SimpleApnsPushNotification pushNotification;
 }
 ```
 
-The process of sending a push notification is asynchronous; although the process of sending a notification and getting a reply from the server may take some time, the client will return a [`io.netty.util.concurrent.Future`](http://netty.io/4.1/api/io/netty/util/concurrent/Future.html) right away. You can use that `Future` to track the progress and eventual outcome of the sending operation. Note that an `io.netty.util.concurrent.Future` is an extension of the Java [`Future`](http://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Future.html) interface that allows callers to add listeners and adds methods for checking the status of the `Future`.
+The process of sending a push notification is asynchronous; although the process of sending a notification and getting a reply from the server may take some time, the client will return a [`CompletableFuture`](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html) right away. You can use that `CompletableFuture` to track the progress and eventual outcome of the sending operation. Note that sending a notification returns a [`PushNotificationFuture`](https://pushy-apns.org/apidocs/0.13/com/eatthepath/pushy/apns/util/concurrent/PushNotificationFuture.html), which is a subclass of `CompletableFuture` that always holds a reference to the notification that was sent.
 
 ```java
 final PushNotificationFuture<SimpleApnsPushNotification, PushNotificationResponse<SimpleApnsPushNotification>>
     sendNotificationFuture = apnsClient.sendNotification(pushNotification);
 ```
 
-The `Future` will complete in one of three circumstances:
+The `CompletableFuture` will complete in one of three circumstances:
 
 1. The gateway accepts the notification and will attempt to deliver it to the destination device.
 2. The gateway rejects the notification; this should be considered a permanent failure, and the notification should not be sent again. Additionally, the APNs gateway may indicate a timestamp at which the destination token became invalid. If that happens, you should stop trying to send *any* notification to that token unless the token has been re-registered since that timestamp.
-3. The `Future` fails with an exception. This should generally be considered a temporary failure, and callers should try to send the notification again when the problem has been resolved.
+3. The `CompletableFuture` fails with an exception. This should generally be considered a temporary failure, and callers should try to send the notification again when the problem has been resolved.
 
 An example:
 
@@ -129,7 +129,7 @@ try {
 }
 ```
 
-Again, it's important to note that the returned `Future` supports listeners; waiting for each individual push notification is inefficient in practice, and most users will be better serverd by adding a listener to the `Future` instead of blocking until it completes. As an example:
+Again, it's important to note that the returned `CompletableFuture` supports listeners; waiting for each individual push notification is inefficient in practice, and most users will be better serverd by adding a listener to the `CompletableFuture` instead of blocking until it completes. As an example:
 
 ```java
 sendNotificationFuture.addListener(future -> {
